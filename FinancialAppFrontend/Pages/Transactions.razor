@@ -1,0 +1,181 @@
+﻿@page "/transactions"
+@inject ApiService ApiService
+@using Common.Models
+
+<h3>Transactions</h3>
+
+<button @onclick="ShowAddTransactionModal">Add New Transaction</button>
+
+@if (transactions == null)
+{
+    <p>Loading transactions...</p>
+}
+else if (!transactions.Any())
+{
+    <p>No transactions available.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Comment</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var transaction in transactions)
+            {
+                <tr>
+                    <td>@transaction.Id</td>
+                    <td>@transaction.TransactionType?.Name</td>
+                    <td>@transaction.Amount</td>
+                    <td>@transaction.Date.ToShortDateString()</td>
+                    <td>@transaction.Comment</td>
+                    <td>
+                        <button @onclick="() => ShowEditTransactionModal(transaction)">Edit</button>
+                        <button @onclick="() => DeleteTransaction(transaction.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (isTransactionModalVisible)
+{
+    <div class="modal">
+        <div class="modal-content">
+            <h3>@(isTransactionEditMode ? "Edit Transaction" : "Add Transaction")</h3>
+            <label>Amount:</label>
+            <input type="number" @bind="transactionModel.Amount" />
+            <label>Date:</label>
+            <input type="date" @bind="transactionModel.Date" />
+            <label>Transaction Type:</label>
+            <select @bind="transactionModel.TransactionTypeId">
+                <option value="">Select a type</option>
+                @if (transactionTypes != null)
+                {
+                    @foreach (var type in transactionTypes)
+                    {
+                        <option value="@type.Id">@type.Name</option>
+                    }
+                }
+            </select>
+            <label>Comment:</label>
+            <input type="text" @bind="transactionModel.Comment" />
+            <button @onclick="SaveTransaction">Save</button>
+            <button @onclick="CloseTransactionModal">Cancel</button>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(transactionErrorMessage))
+{
+    <p style="color: red;">@transactionErrorMessage</p>
+}
+
+@code {
+    private List<TransactionViewModel>? transactions;
+    private List<TransactionTypeViewModel>? transactionTypes;
+    private string? transactionErrorMessage;
+    private bool isTransactionModalVisible = false;
+    private bool isTransactionEditMode = false;
+    private TransactionViewModel transactionModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTransactions();
+        await LoadTransactionTypes();
+    }
+
+    private async Task LoadTransactions()
+    {
+        transactions = await ApiService.GetTransactionsAsync();
+    }
+
+    private async Task LoadTransactionTypes()
+    {
+        transactionTypes = await ApiService.GetTransactionTypesAsync();
+    }
+
+    private void ShowAddTransactionModal()
+    {
+        transactionModel = new TransactionViewModel
+            {
+                Date = DateTime.Now,
+                Amount = 0,
+                Comment = string.Empty
+            };
+        isTransactionEditMode = false;
+        isTransactionModalVisible = true;
+    }
+
+    private void ShowEditTransactionModal(TransactionViewModel transaction)
+    {
+        transactionModel = new TransactionViewModel
+            {
+                Id = transaction.Id,
+                Amount = transaction.Amount,
+                Date = transaction.Date,
+                Comment = transaction.Comment,
+                TransactionTypeId = transaction.TransactionTypeId
+            };
+        isTransactionEditMode = true;
+        isTransactionModalVisible = true;
+    }
+
+    private void CloseTransactionModal()
+    {
+        isTransactionModalVisible = false;
+    }
+
+    private async Task SaveTransaction()
+    {
+        try
+        {
+            var response = await ApiService.SaveTransactionAsync(transactionModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadTransactions();
+                CloseTransactionModal();
+                StateHasChanged();
+            }
+            else
+            {
+                transactionErrorMessage = "Failed to save the transaction.";
+            }
+        }
+        catch (Exception ex)
+        {
+            transactionErrorMessage = $"An error occurred: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteTransaction(int id)
+    {
+        try
+        {
+            var response = await ApiService.DeleteTransactionAsync(id);
+
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadTransactions();
+                StateHasChanged();
+            }
+            else
+            {
+                transactionErrorMessage = "Failed to delete the transaction.";
+            }
+        }
+        catch (Exception ex)
+        {
+            transactionErrorMessage = $"An error occurred: {ex.Message}";
+        }
+    }
+}

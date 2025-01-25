@@ -1,0 +1,43 @@
+﻿@page "/_Host"
+@namespace Task12.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Finance Management</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/custom.css" />
+</head>
+<body>
+    <div class="main-layout">
+        <NavMenu />
+        <main class="content">
+            <component type="typeof(App)" render-mode="ServerPrerendered" />
+        </main>
+    </div>
+    <script src="_framework/blazor.server.js"></script>
+</body>
+</html>
+
+<style>
+    body {
+        margin: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f8f9fa;
+    }
+
+    .main-layout {
+        display: flex;
+        height: 100vh;
+    }
+
+    .content {
+        flex-grow: 1;
+        padding: 20px;
+        background-color: #ffffff;
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+</style>

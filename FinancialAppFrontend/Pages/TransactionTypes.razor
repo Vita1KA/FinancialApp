@@ -1,0 +1,135 @@
+﻿@page "/transaction-types"
+@inject ApiService ApiService
+
+<h3>Transaction Types</h3>
+
+<button @onclick="ShowAddModal">Add New Type</button>
+
+@if (transactionTypes == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var type in transactionTypes)
+            {
+                <tr>
+                    <td>@type.Id</td>
+                    <td>@type.Name</td>
+                    <td>
+                        <button @onclick="() => ShowEditModal(type)">Edit</button>
+                        <button @onclick="() => DeleteTransactionType(type.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (isModalVisible)
+{
+    <div class="modal">
+        <div class="modal-content">
+            <h3>@(isEditMode ? "Edit Transaction Type" : "Add Transaction Type")</h3>
+            <input type="text" @bind="transactionTypeModel.Name" placeholder="Enter Name" />
+            <button @onclick="SaveTransactionType">Save</button>
+            <button @onclick="CloseModal">Cancel</button>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p style="color: red;">@errorMessage</p>
+}
+
+@code {
+    private List<TransactionTypeViewModel>? transactionTypes;
+    private string? errorMessage;
+    private bool isModalVisible = false;
+    private bool isEditMode = false;
+    private TransactionTypeViewModel transactionTypeModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTransactionTypes();
+    }
+
+    private async Task LoadTransactionTypes()
+    {
+        transactionTypes = await ApiService.GetTransactionTypesAsync();
+    }
+
+    private void ShowAddModal()
+    {
+        transactionTypeModel = new TransactionTypeViewModel();
+        isEditMode = false;
+        isModalVisible = true;
+    }
+
+    private void ShowEditModal(TransactionTypeViewModel type)
+    {
+        transactionTypeModel = new TransactionTypeViewModel { Id = type.Id, Name = type.Name };
+        isEditMode = true;
+        isModalVisible = true;
+    }
+
+    private void CloseModal()
+    {
+        isModalVisible = false;
+    }
+
+    private async Task SaveTransactionType()
+    {
+        try
+        {
+            var response = await ApiService.SaveTransactionTypeAsync(transactionTypeModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadTransactionTypes();
+                CloseModal();
+                StateHasChanged();
+            }
+            else
+            {
+                errorMessage = "Failed to save the transaction type.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteTransactionType(int id)
+    {
+        try
+        {
+            var response = await ApiService.DeleteTransactionTypeAsync(id);
+
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadTransactionTypes();
+                StateHasChanged();
+            }
+            else
+            {
+                errorMessage = "Failed to delete the transaction type.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+        }
+    }
+}

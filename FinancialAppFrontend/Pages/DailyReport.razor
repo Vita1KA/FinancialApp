@@ -1,0 +1,66 @@
+﻿@page "/dailyreport"
+@inject ApiService ApiService
+@using Common.ViewModels
+
+<h3>Daily Report</h3>
+
+<input type="date" @bind="reportDate" @bind:event="oninput" />
+<button @onclick="GetDailyReport">Get Report</button>
+
+@if (dailyReport != null)
+{
+    <h4>Report for @dailyReport.Date.ToShortDateString()</h4>
+    <p>Total Income: @dailyReport.TotalIncome</p>
+    <p>Total Expenses: @dailyReport.TotalExpenses</p>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Amount</th>
+                <th>Comment</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var transaction in dailyReport.Transactions)
+            {
+                <tr>
+                    <td>@transaction.Amount</td>
+                    <td>@transaction.Comment</td>
+                    <td>@transaction.TransactionDate.ToShortDateString()</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p style="color: red;">@errorMessage</p>
+}
+
+@code {
+    private DateTime reportDate = DateTime.Today;
+    private DailyReportViewModel? dailyReport;
+    private string? errorMessage;
+
+    private async Task GetDailyReport()
+    {
+        try
+        {
+            dailyReport = await ApiService.GetDailyReportAsync(reportDate);
+            if (dailyReport == null)
+            {
+                errorMessage = "No data found for the selected date.";
+            }
+            else
+            {
+                errorMessage = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+        }
+    }
+}
